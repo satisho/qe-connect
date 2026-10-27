@@ -1,0 +1,2 @@
+# Optional: install when QEC_DATABASE_URL points at PostgreSQL
+psycopg[binary]==3.3.6

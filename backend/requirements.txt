@@ -1,0 +1,15 @@
+# QE Connect runtime dependencies (Python 3.10+). Pinned and checked for Python 3.10 support.
+fastapi==0.143.0
+starlette==1.7.0
+uvicorn==0.54.0
+pydantic==2.14.0
+sqlalchemy==2.0.54
+alembic==1.20.0
+openpyxl==3.1.5
+python-multipart==0.0.32
+msal==1.39.0
+cryptography==50.0.2
+defusedxml==0.7.1
+segno==1.6.6
+# certifi is pinned directly: versions before 2026.10.19 trust a compromised CA root (GHSA-6q48-6c7w-9gw2)
+certifi==2026.10.19
