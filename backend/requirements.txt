@@ -1,6 +1,6 @@
 # QE Connect runtime dependencies (Python 3.10+). Pinned and checked for Python 3.10 support.
 fastapi==0.143.0
-starlette==1.7.0
+starlette==1.9.0
 uvicorn==0.54.0
 pydantic==2.14.0
 sqlalchemy==2.0.54
