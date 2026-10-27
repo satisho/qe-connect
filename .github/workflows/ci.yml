@@ -1,4 +1,3 @@
-yaml
 name: QE Connect checks
 # Runs the tests on SQLite and PostgreSQL, rebuilds the web interface and scans dependencies
 # on every push and pull request, and weekly so new advisories are caught.
@@ -55,3 +54,5 @@ jobs:
           npm ci
           npm audit
           npm run build
+ 
+Claude finished the response
