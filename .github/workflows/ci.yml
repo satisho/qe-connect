@@ -1,0 +1,57 @@
+yaml
+name: QE Connect checks
+# Runs the tests on SQLite and PostgreSQL, rebuilds the web interface and scans dependencies
+# on every push and pull request, and weekly so new advisories are caught.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: qec
+          POSTGRES_PASSWORD: qec
+          POSTGRES_DB: qec_test
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U qec" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (hash-checked)
+        run: |
+          pip install --require-hashes -r backend/requirements-postgres.lock
+          pip install pytest==9.1.1 httpx==0.28.1 pip-audit
+      - name: Tests on SQLite
+        working-directory: backend
+        run: python -m pytest -q
+      - name: Tests on PostgreSQL
+        working-directory: backend
+        env:
+          QEC_TEST_DATABASE_URL: postgresql+psycopg://qec:qec@127.0.0.1:5432/qec_test
+        run: python -m pytest -q
+      - name: Python dependency scan
+        run: pip-audit --require-hashes -r backend/requirements-postgres.lock
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: frontend
+        run: |
+          npm ci
+          npm audit
+          npm run build
