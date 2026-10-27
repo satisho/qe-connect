@@ -1,11 +1,16 @@
+yaml
 version: 2
+# Security fixes only: GitHub raises a pull request when a package has a known vulnerability.
+# Routine upgrades are done in QE Connect releases, where the hash-locked files are regenerated and re-tested.
 updates:
   - package-ecosystem: pip
     directory: /backend
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
+    open-pull-requests-limit: 0
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: monthly }
