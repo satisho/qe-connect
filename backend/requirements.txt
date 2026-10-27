@@ -12,4 +12,4 @@ cryptography==50.0.2
 defusedxml==0.7.1
 segno==1.6.6
 # certifi is pinned directly: versions before 2026.10.19 trust a compromised CA root (GHSA-6q48-6c7w-9gw2)
-certifi==2026.10.19
+certifi==2026.10.23
