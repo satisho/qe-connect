@@ -19,6 +19,7 @@ and security control is kept; nothing about the survey, tracker, email delivery,
   automatically and 1.0.x backups still restore. Existing settings are kept; set Administration › Organization.
 - Settings keep the `QEC_` prefix, so existing `.env` files work unchanged.
 - Tests for branding, its permissions and validation, backups, and a check that no client-specific text ships.
+- Build tooling: Vite 6.4.6 (fixes GHSA-8g5g-mxqh-grgj in the development server; the shipped app is unchanged).
 
 ## 1.0.1 (2026-10-27) — QE Connect security release
 
