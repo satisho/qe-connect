@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError, errorText } from "../api";
-import { fmtDate, fmtDateTime, Mark } from "../lib";
-import type { Question } from "../types";
+import { Brand, fmtDate, fmtDateTime, useAccent } from "../lib";
+import type { Organization, Question } from "../types";
 
 type Answers = Record<string, string | string[]>;
 interface SurveyData {
   application: { name: string; lob: string; team: string; respondent_name: string };
-  campaign: string; status: string; mode: "core" | "all"; due_at: string | null; completed_at: string | null; reference: string;
+  campaign: string; organization?: Organization; status: string; mode: "core" | "all"; due_at: string | null; completed_at: string | null; reference: string;
   questions: Question[]; answers: Answers; other: Record<string, string>; prefilled: string[];
 }
 type View = "welcome" | "section" | "review" | "done";
@@ -58,6 +58,7 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
   const pending = useRef(false);
   const latest = useRef({ answers, other, mode });
   latest.current = { answers, other, mode };
+  useAccent(data?.organization?.accent);
 
   useEffect(() => {
     (async () => {
@@ -65,8 +66,8 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
         let d: SurveyData;
         if (preview) {
           const p = await api.get<{ questions: Question[] }>("/api/survey-preview");
-          const st = await api.get<{ campaign: string }>("/api/auth/state");
-          d = { application: { name: "Example application", lob: "", team: "", respondent_name: "Preview" }, campaign: st.campaign, status: "opened",
+          const st = await api.get<{ campaign: string; organization: Organization }>("/api/auth/state");
+          d = { application: { name: "Example application", lob: "", team: "", respondent_name: "Preview" }, campaign: st.campaign, organization: st.organization, status: "opened",
             mode: "core", due_at: null, completed_at: null, reference: "PREVIEW", questions: p.questions, answers: {}, other: {}, prefilled: [] };
         } else d = await api.get<SurveyData>(`/api/s/${encodeURIComponent(token!)}`);
         setData(d);
@@ -184,11 +185,12 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
     : save.state === "saved" ? <span className="saved"><i />Saved {fmtDateTime(save.at)}</span>
     : <span className="saved"><i />Your answers save as you go</span>;
 
+  const team = data.organization?.team_name || "QE Assessment team";
   const header = (
     <>
       {preview && <div className="banner"><div className="wrap"><span>Preview of the survey as respondents see it. Answers aren't recorded.</span>
         <button type="button" className="btn sm" onClick={() => window.close()}>Close preview</button></div></div>}
-      <header className="top"><div className="wrap"><div className="brand"><Mark /><div><b>QE Connect</b><small>BC Ferries · {data.campaign}</small></div></div>{saveBadge}</div></header>
+      <header className="top"><div className="wrap"><Brand org={data.organization} sub={data.campaign} />{saveBadge}</div></header>
     </>
   );
 
@@ -203,7 +205,7 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
       <>{header}<div className="wrap rs" style={{ paddingBlock: "28px 56px" }}><main style={{ maxWidth: 780 }}>
         <p className="eyebrow">You're invited</p>
         <h1>Tell us how quality works on {data.application.name}</h1>
-        <p className="lede">The QE Assessment team is building a picture of testing and quality practice across BC Ferries applications. There are no right or wrong answers, and "Not sure" is always fine.</p>
+        <p className="lede">The {team} is building a picture of testing and quality practice across {data.organization?.name || "your organization's"} applications. There are no right or wrong answers, and "Not sure" is always fine.</p>
         <dl className="invite kv">
           <div><dt>Application</dt><dd>{data.application.name}</dd></div>
           {data.application.lob && <div><dt>Line of business</dt><dd>{data.application.lob}</dd></div>}
@@ -231,7 +233,7 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
         <p className="eyebrow">{preview ? "Preview finished" : "Submitted"}</p>
         <h1>{preview ? "That's the end of the survey" : "Thank you. Your response is in."}</h1>
         {preview ? <p className="lede">In a real survey, the response now appears as completed on the tracker.</p> : <>
-          <p className="lede" style={{ marginBottom: 6 }}>The QE Assessment team now has your answers for <b>{data.application.name}</b>{data.completed_at ? ` (submitted ${fmtDateTime(data.completed_at)})` : ""}. Your reference:</p>
+          <p className="lede" style={{ marginBottom: 6 }}>The {team} now has your answers for <b>{data.application.name}</b>{data.completed_at ? ` (submitted ${fmtDateTime(data.completed_at)})` : ""}. Your reference:</p>
           <span className="ref">{data.reference}</span>
           <p className="help">Need to change something? Reply to the invitation email and the team can reopen your survey.</p></>}
       </div></div></>
@@ -296,7 +298,7 @@ export default function Survey({ token, preview }: { token?: string; preview?: b
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
-  return <><header className="top"><div className="wrap"><div className="brand"><Mark /><div><b>QE Connect</b><small>BC Ferries · QE Assessment survey</small></div></div></div></header>
+  return <><header className="top"><div className="wrap"><Brand sub="QE Assessment survey" /></div></header>
     <div className="wrap rs" style={{ paddingBlock: "28px 56px" }}>{children}</div></>;
 }
 

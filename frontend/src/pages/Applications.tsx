@@ -31,7 +31,7 @@ export default function Applications({ user }: { user: User }) {
   const cell = (a: App, f: Field, label: string, type = "text") => (
     <input type={type} defaultValue={a[f]} key={`${a.id}-${f}-${a[f]}`} aria-label={`${label} for ${a.name}`} readOnly={!canEdit}
       className={f === "respondent_email" && a[f] && !emailOk(a[f]) ? "bad" : ""}
-      placeholder={f === "respondent_email" ? "name@bcferries.com" : ""}
+      placeholder={f === "respondent_email" ? "name@example.com" : ""}
       onBlur={(e) => { const v = e.target.value.trim(); if (canEdit && v !== a[f]) save(a, { [f]: v }); }}
       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
   );
@@ -102,7 +102,7 @@ function AddApp({ lobs, onClose, onDone }: { lobs: Lob[]; onClose: () => void; o
           <option value="">Not set</option>{lobs.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
         <div><label className="f" htmlFor="nt">Delivery team / ART</label><input id="nt" type="text" value={f.team} onChange={set("team")} /></div>
         <div><label className="f" htmlFor="nr">Respondent name</label><input id="nr" type="text" value={f.respondent_name} onChange={set("respondent_name")} /></div>
-        <div><label className="f" htmlFor="ne">Respondent email</label><input id="ne" type="email" value={f.respondent_email} onChange={set("respondent_email")} placeholder="name@bcferries.com" /></div>
+        <div><label className="f" htmlFor="ne">Respondent email</label><input id="ne" type="email" value={f.respondent_email} onChange={set("respondent_email")} placeholder="name@example.com" /></div>
       </div>
       {err && <div className="note err" role="alert">{err}</div>}
     </Modal>

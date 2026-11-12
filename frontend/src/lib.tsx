@@ -110,13 +110,41 @@ const ICON: Record<Status, ReactNode> = {
 };
 export const Pill = ({ s }: { s: Status }) => <span className={`st ${s}`}>{ICON[s]}{STATUS[s]}</span>;
 
+/* QE Connect mark: three linked people/nodes (a community of practice), coloured by the organization's accent. */
 export const Mark = () => (
   <svg className="mark" viewBox="0 0 34 34" aria-hidden="true">
     <rect width="34" height="34" rx="8" fill="var(--accent)" />
-    <path d="M6 21c3 2.6 6 2.6 9 0s6-2.6 9 0 3.6 1.6 4 1.3" fill="none" stroke="var(--accent-ink)" strokeWidth="2.2" strokeLinecap="round" />
-    <path d="M11 17l4-9 8 9z" fill="var(--signal)" />
+    <path d="M11 22.5L17 11l6 11.5z" fill="none" stroke="var(--accent-ink)" strokeWidth="1.8" strokeLinejoin="round" opacity=".85" />
+    <circle cx="17" cy="11" r="3.4" fill="var(--signal)" />
+    <circle cx="11" cy="22.5" r="3.4" fill="var(--accent-ink)" />
+    <circle cx="23" cy="22.5" r="3.4" fill="var(--accent-ink)" />
   </svg>
 );
+
+/* Product name stays "QE Connect"; the line under it names the client organization when one is set. */
+export function Brand({ org, sub }: { org?: { name: string } | null; sub: string }) {
+  const name = org?.name?.trim();
+  return <div className="brand"><Mark /><div><b>QE Connect</b><small>{name ? `${name} · ${sub}` : sub}</small></div></div>;
+}
+
+/* Applies the organization's accent colour (a #RRGGBB value) to the whole interface. */
+export function useAccent(accent?: string | null) {
+  useEffect(() => {
+    const root = document.documentElement;
+    if (accent && /^#[0-9a-f]{6}$/i.test(accent)) {
+      const n = parseInt(accent.slice(1), 16);
+      const lin = (c: number) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+      const lum = 0.2126 * lin(n >> 16) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+      root.style.setProperty("--brand", accent);
+      root.style.setProperty("--brand-ink", lum > 0.36 ? "#0B1A22" : "#FFFFFF");
+      root.dataset.brand = "1";
+    } else {
+      root.style.removeProperty("--brand");
+      root.style.removeProperty("--brand-ink");
+      delete root.dataset.brand;
+    }
+  }, [accent]);
+}
 
 /* ---------------- email preview (mirrors the server's template filling) ---------------- */
 export function fillTemplate(tpl: string, v: Record<string, string>) {

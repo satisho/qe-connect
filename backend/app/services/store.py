@@ -1,4 +1,4 @@
-"""Stored settings (survey name, invitation email, email delivery) and the activity feed."""
+"""Stored settings (organization branding, survey name, invitation email, email delivery) and the activity feed."""
 from __future__ import annotations
 
 import copy
@@ -9,17 +9,17 @@ from sqlalchemy.orm import Session
 from ..models import Activity, Setting
 
 DEFAULT_EMAIL = {
-    "subject": "QE Connect: quality survey for {application}",
+    "subject": "Quality survey for {application}",
     "body": (
         "Hi {first_name},\n\n"
-        "The QE Assessment team is building a picture of testing and quality practice across BC Ferries "
+        "The {team_name} is building a picture of testing and quality practice across {organization} "
         "applications. You have been named as the contact for {application} ({lob}).\n\n"
         "Please complete the survey by {due_date}. It takes about 10 to 15 minutes and saves as you go, "
         "so you can stop and come back.\n\n"
         "Start the survey: {survey_link}\n\n"
         "There are no right or wrong answers, and \"Not sure\" is always fine. If someone else is better "
         "placed to answer, reply to this email and let us know.\n\n"
-        "Thank you,\nQE Assessment team"
+        "Thank you,\n{team_name}"
     ),
 }
 
@@ -35,7 +35,7 @@ DEFAULT_DELIVERY = {
     "security": "starttls",  # starttls | tls | none
     "smtp_auth": "none",  # none | login
     "username": "",
-    "mailbox": "qe-connect@bcferries.com",
+    "mailbox": "qe-connect@example.com",
     "display_name": "QE Connect",
     "reply_to": "",
     "rate_per_minute": 30,
@@ -43,9 +43,14 @@ DEFAULT_DELIVERY = {
     "tested": None,
 }
 
+# Who this installation is for. QE Connect is client-neutral: each install shows its own organization's name.
+DEFAULT_ORG = {"name": "", "team_name": "QE Assessment team", "accent": ""}
+ACCENT_FALLBACK = "#0E6B6B"
+
 DEFAULT_SECURITY = {"mfa_required": False, "idle_minutes": 30}
 
 DEFAULTS: dict[str, Any] = {
+    "organization": DEFAULT_ORG,
     "security": DEFAULT_SECURITY,
     "campaign": {"name": "Application QA Survey · Wave 1", "default_due_days": 14},
     "email": DEFAULT_EMAIL,
@@ -59,6 +64,13 @@ def get(db: Session, key: str) -> dict:
     if row and isinstance(row.value, dict):
         base.update(row.value)
     return base
+
+
+def org(db: Session) -> dict:
+    """Organization branding with safe fallbacks, for headers, emails and the survey."""
+    o = get(db, "organization")
+    return {"name": (o.get("name") or "").strip(), "team_name": (o.get("team_name") or "").strip() or "QE Assessment team",
+            "accent": o.get("accent") or ""}
 
 
 def put(db: Session, key: str, value: dict) -> dict:

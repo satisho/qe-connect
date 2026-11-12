@@ -27,6 +27,7 @@ class SetupIn(BaseModel):
     name: str
     email: str
     password: str
+    organization: str = ""
 
 
 class LoginIn(BaseModel):
@@ -59,6 +60,7 @@ def state(request: Request, db: Session = Depends(get_db)):
     pending = {"step": s.mfa_state, "email": s.user.email} if s and s.mfa_state != "ok" else None
     return {"needs_setup": needs_setup, "user": user_out(user) if user else None, "pending": pending,
             "version": APP_VERSION, "campaign": store.get(db, "campaign")["name"],
+            "organization": store.org(db),
             "mfa_required": bool(policy(db).get("mfa_required")),
             "notice": getattr(request.state, "session_end", None)}
 
@@ -75,6 +77,8 @@ def setup(body: SetupIn, request: Request, response: Response, db: Session = Dep
     u = User(email=email, name=body.name.strip()[:120] or email, password_hash=hash_password(body.password), role="admin")
     db.add(u)
     db.flush()
+    if org_name := " ".join(body.organization.split())[:120]:
+        store.put(db, "organization", {"name": org_name})
     store.log(db, email, "user.setup", "Created the first administrator")
     seclog.record(db, "user.create", email, request, detail="First administrator created at setup")
     seclog.record(db, "signin", email, request)

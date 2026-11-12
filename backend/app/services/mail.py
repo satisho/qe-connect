@@ -72,8 +72,11 @@ def _due_text(dt: datetime | None) -> str:
     return f"{dt.strftime('%A')}, {dt.strftime('%B')} {dt.day}"
 
 
-def fill(template: str, app: Application, inv: Invitation | None, link: str) -> str:
+def fill(template: str, app: Application, inv: Invitation | None, link: str, org: dict | None = None) -> str:
+    org = org or {}
     values = {
+        "organization": org.get("name") or "your organization",
+        "team_name": org.get("team_name") or "QE Assessment team",
         "first_name": (app.respondent_name or "there").split(" ")[0],
         "name": app.respondent_name or "",
         "application": app.name,
@@ -89,13 +92,14 @@ def fill(template: str, app: Application, inv: Invitation | None, link: str) -> 
 LINK_RE = re.compile(r"(https?://[^\s<]+/s/[A-Za-z0-9_-]+)")
 
 
-def to_html(body: str) -> str:
+def to_html(body: str, accent: str = "") -> str:
+    accent = accent if re.fullmatch(r"#[0-9A-Fa-f]{6}", accent or "") else store.ACCENT_FALLBACK
     parts = []
     for para in re.split(r"\n{2,}", body.strip()):
         h = html.escape(para).replace("\n", "<br>")
         h = LINK_RE.sub(
             lambda m: (
-                f'</p><p><a href="{m.group(1)}" style="display:inline-block;background:#0A5A8A;color:#ffffff;'
+                f'</p><p><a href="{m.group(1)}" style="display:inline-block;background:{accent};color:#ffffff;'
                 f'padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:600">Start the survey</a>'
                 f'<br><span style="font-size:12px;color:#536677">{m.group(1)}</span>'
             ),
@@ -116,11 +120,12 @@ def compose(db: Session, app: Application, inv: Invitation, kind: str, actor: st
     d = store.get(db, "delivery")
     tpl = store.get(db, "email")
     link = survey_link(db, inv.token)
-    subject = one_line(("Reminder: " if kind == "Reminder" else "") + fill(tpl["subject"], app, inv, link))
+    o = store.org(db)
+    subject = one_line(("Reminder: " if kind == "Reminder" else "") + fill(tpl["subject"], app, inv, link, o))
     mode = d.get("mode", "sim")
     e = Email(
         application_id=app.id, kind=kind, to_addr=app.respondent_email.strip(), to_name=one_line(app.respondent_name),
-        from_addr=from_line(d), subject=subject[:500], body=fill(tpl["body"], app, inv, link),
+        from_addr=from_line(d), subject=subject[:500], body=fill(tpl["body"], app, inv, link, o),
         status="recorded" if mode == "sim" else "queued", via=mode, created_by=actor,
         sent_at=utcnow() if mode == "sim" else None,
     )
@@ -167,7 +172,7 @@ def _send_graph(d: dict, e: Email) -> None:
     msg = {
         "message": {
             "subject": one_line(e.subject),
-            "body": {"contentType": "HTML", "content": to_html(e.body)},
+            "body": {"contentType": "HTML", "content": to_html(e.body, d.get("_accent", ""))},
             "toRecipients": [{"emailAddress": {"address": e.to_addr, "name": e.to_name or e.to_addr}}],
         },
         "saveToSentItems": bool(d.get("save_sent", True)),
@@ -200,7 +205,7 @@ def _send_smtp(d: dict, e: Email) -> None:
     m["Date"] = formatdate(localtime=True)
     m["Message-ID"] = make_msgid(domain=(d.get("mailbox") or "qe-connect.local").split("@")[-1])
     m.set_content(e.body)
-    m.add_alternative(to_html(e.body), subtype="html")
+    m.add_alternative(to_html(e.body, d.get("_accent", "")), subtype="html")
     host, port = d.get("host", "").strip(), int(d.get("port") or 25)
     ctx = ssl.create_default_context()
     try:
@@ -270,7 +275,7 @@ def config_problems(d: dict) -> list[str]:
 
 
 def test_send(db: Session, to: str, actor: str) -> dict:
-    d = store.get(db, "delivery")
+    d = {**store.get(db, "delivery"), "_accent": store.org(db)["accent"]}
     steps = []
     ok = True
     if not email_ok(to):
@@ -312,7 +317,7 @@ def send_pending(session_factory: Callable[[], Session], max_batch: int = 50) ->
     db = session_factory()
     done = 0
     try:
-        d = store.get(db, "delivery")
+        d = {**store.get(db, "delivery"), "_accent": store.org(db)["accent"]}
         rate = max(1, int(d.get("rate_per_minute") or 30))
         queued = db.scalars(select(Email).where(Email.status == "queued").order_by(Email.id).limit(max_batch)).all()
         for e in queued:

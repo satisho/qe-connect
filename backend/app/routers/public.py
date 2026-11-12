@@ -30,7 +30,7 @@ def _inv(db: Session, token: str) -> Invitation:
     inv = db.scalar(select(Invitation).where(Invitation.token == token))
     if not inv:
         raise HTTPException(404, "This survey link isn't valid. It may have been cancelled or replaced; "
-                                 "ask the QE Assessment team for a new one.")
+                                 f"ask the {store.org(db)['team_name']} for a new one.")
     return inv
 
 
@@ -50,6 +50,7 @@ def _out(db: Session, inv: Invitation) -> dict:
         "application": {"name": a.name, "lob": a.lob.name if a.lob else "", "team": a.team,
                         "respondent_name": a.respondent_name},
         "campaign": store.get(db, "campaign")["name"],
+        "organization": store.org(db),
         "status": inv.status, "mode": inv.mode, "due_at": iso(inv.due_at), "completed_at": iso(inv.completed_at),
         "reference": inv.reference,
         "questions": [{**q_out(q), "options": rules.options_for(q, lobs)} for q in _qs(db)],
@@ -76,7 +77,7 @@ def open_survey(token: str, db: Session = Depends(get_db)):
 def save(token: str, body: SaveIn, db: Session = Depends(get_db)):
     inv = _inv(db, token)
     if inv.status == "completed":
-        raise HTTPException(409, "This survey has already been submitted. Ask the QE Assessment team to reopen it.")
+        raise HTTPException(409, f"This survey has already been submitted. Ask the {store.org(db)['team_name']} to reopen it.")
     answers, other = rules.clean_answers(_qs(db), lob_names(db), body.answers, body.other)
     inv.answers, inv.other, inv.mode = answers, other, body.mode
     if not inv.started_at:

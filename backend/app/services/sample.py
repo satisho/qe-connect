@@ -10,15 +10,15 @@ from sqlalchemy.orm import Session
 from ..models import Activity, Application, Email, Invitation, Lob, Question, Setting, utcnow
 from . import mail, store
 
-LOBS = ["Customer Journey & Revenue Management", "Asset Management & Fleet Reliability"]
+LOBS = ["Customer & Digital Channels", "Operations & Enterprise Systems"]
 APPS = [
-    ("eBooking", "PRJ-1042", 0, "ART#1 Digital Customer Experience", "Jordan Lee", "jordan.lee@example.com"),
+    ("Customer portal", "PRJ-1042", 0, "ART#1 Digital Customer Experience", "Jordan Lee", "jordan.lee@example.com"),
     ("Mobile app (iOS / Android)", "PRJ-1107", 0, "ART#1 Digital Customer Experience", "Priya Shah", "priya.shah@example.com"),
-    ("Terminal POS", "PRJ-0870", 0, "ART#2 Terminal & Onboard", "Marc Tremblay", "marc.tremblay@example.com"),
-    ("Contact centre CRM", "", 0, "ART#2 Terminal & Onboard", "Aisha Khan", "aisha.khan@example.com"),
-    ("Maximo 9", "PRJ-0915", 1, "ART#3 Fleet & Asset Systems", "Daniel Wu", "daniel.wu@example.com"),
-    ("Vessel maintenance mobile", "PRJ-1121", 1, "ART#3 Fleet & Asset Systems", "Sofia Martins", "sofia.martins@example.com"),
-    ("Fuel monitoring (OT)", "", 1, "Fleet Engineering", "", ""),
+    ("Point of sale", "PRJ-0870", 0, "ART#2 Stores & Service", "Marc Tremblay", "marc.tremblay@example.com"),
+    ("Contact centre CRM", "", 0, "ART#2 Stores & Service", "Aisha Khan", "aisha.khan@example.com"),
+    ("ERP finance", "PRJ-0915", 1, "ART#3 Enterprise Systems", "Daniel Wu", "daniel.wu@example.com"),
+    ("Field service mobile", "PRJ-1121", 1, "ART#3 Enterprise Systems", "Sofia Martins", "sofia.martins@example.com"),
+    ("Warehouse sensors (OT)", "", 1, "Operations Engineering", "", ""),
 ]
 A = "A. About You & the Application"
 B = "B. Application Profile"
@@ -26,24 +26,24 @@ L = "L. Planning, Governance & Capacity"
 M = "M. Shift-Left & Quality by Design"
 CTX = "Context (not scored)"
 RAP = "Respondent & application profile"
-VENDOR_RULE = ("Show if B2 is 'Packaged software (COTS) hosted by BC Ferries' or 'SaaS / vendor-hosted cloud platform' "
+VENDOR_RULE = ("Show if B2 is 'Packaged software (COTS) hosted in-house' or 'SaaS / vendor-hosted cloud platform' "
                "or 'Custom-built by a vendor' or 'Package with custom extensions (hybrid)'")
 # qid, section, pillar, focus, text, help, type, options, required, core, show_if
 QUESTIONS = [
     ("A1", A, CTX, RAP, "Your name, role/title and email.", "Used only to follow up on your answers.", "short", "", 1, 1, ""),
     ("A2", A, CTX, RAP, "Which Line of Business (LOB) does the application you are describing belong to?", "Please submit one response per application.", "single", "", 1, 1, "Options mirror the LOBs on the 'Lists' tab"),
-    ("A3", A, CTX, RAP, "Application or project name (and Project ID, if there is one).", "e.g. eBooking, Terminal POS, Maximo 9.", "short", "", 1, 1, ""),
+    ("A3", A, CTX, RAP, "Application or project name (and Project ID, if there is one).", "e.g. Customer portal, Point of sale, ERP finance.", "short", "", 1, 1, ""),
     ("A4", A, CTX, RAP, "Which Agile Release Train (ART), POD or delivery team looks after this application?", 'e.g. ART#1 Digital Customer Experience. Write "Not sure" if unknown.', "short", "", 1, 1, ""),
     ("B1", B, CTX, RAP, "In one or two sentences, what does this application do and who uses it?", "", "long", "", 1, 1, ""),
-    ("B2", B, CTX, RAP, "What type of application is it?", "", "single", "Packaged software (COTS) hosted by BC Ferries\nSaaS / vendor-hosted cloud platform\nCustom-built by BC Ferries team\nCustom-built by a vendor\nPackage with custom extensions (hybrid)\nLegacy / nearing end of life\nOther (please specify)", 1, 1, ""),
-    ("B3", B, CTX, RAP, "What is the main technology or platform?", "e.g. SAP Hybris, IBM Maximo, Oracle EBS, iOS/Android, .NET", "short", "", 1, 1, ""),
-    ("B4", B, "QE Engineering", "Customer Journey & Business Validation", "Through which channels or interfaces is it used? (Select all that apply)", "", "multi", "Public website\nMobile app - iOS\nMobile app - Android\nTerminal kiosk / point of sale\nVessel system / point of sale\nInternal desktop or web application\nBack-office / batch processing\nOperational technology (OT) / sensors\nAPIs / integrations only\nOther (please specify)", 1, 1, ""),
+    ("B2", B, CTX, RAP, "What type of application is it?", "", "single", "Packaged software (COTS) hosted in-house\nSaaS / vendor-hosted cloud platform\nCustom-built by an in-house team\nCustom-built by a vendor\nPackage with custom extensions (hybrid)\nLegacy / nearing end of life\nOther (please specify)", 1, 1, ""),
+    ("B3", B, CTX, RAP, "What is the main technology or platform?", "e.g. SAP, Salesforce, ServiceNow, iOS/Android, .NET, Java", "short", "", 1, 1, ""),
+    ("B4", B, "QE Engineering", "Customer Journey & Business Validation", "Through which channels or interfaces is it used? (Select all that apply)", "", "multi", "Public website\nMobile app - iOS\nMobile app - Android\nKiosk / point of sale\nField or on-site device\nInternal desktop or web application\nBack-office / batch processing\nOperational technology (OT) / sensors\nAPIs / integrations only\nOther (please specify)", 1, 1, ""),
     ("B5", B, "Quality Governance", "Quality Risk, Assurance & Compliance", "How business-critical is this application?", "", "single", "Safety-critical\nRevenue-critical\nOperations-critical\nImportant, but workarounds exist\nLow impact\nNot sure", 1, 1, ""),
-    ("B6", B, "QE Engineering", "Performance & Reliability Engineering", "Roughly how many people use it, and are there seasonal peaks (e.g. summer sailings)?", 'A rough answer is fine, e.g. "300 staff; public traffic peaks Jul-Aug".', "short", "", 0, 0, ""),
+    ("B6", B, "QE Engineering", "Performance & Reliability Engineering", "Roughly how many people use it, and are there seasonal peaks (e.g. month-end or holiday peaks)?", 'A rough answer is fine, e.g. "300 staff; public traffic peaks Jul-Aug".', "short", "", 0, 0, ""),
     ("B7", B, "QE Delivery Management", "Quality Planning & Forecasting", "What lifecycle stage is the application in?", "", "single", "Planned - not started\nIn build / implementation\nIn production - actively enhanced\nIn production - maintenance only\nPlanned for replacement or retirement", 1, 1, ""),
     ("B8", B, "QE Engineering", "End-to-End, API & Integration Quality", "Approximately how many other systems does it integrate with?", "", "single", "None\n1-3\n4-10\n11-25\nMore than 25\nNot known", 1, 1, ""),
-    ("B9", B, "QE Engineering", "End-to-End, API & Integration Quality", "List the key upstream and downstream systems.", "e.g. Maximo <-> Oracle EBS", "long", "", 0, 0, "Show if B8 is not 'None' or 'Not known'"),
-    ("L8", L, "Quality Governance", "Portfolio, Partner & Value Governance", "Is testing evidence from vendors reviewed and accepted by BC Ferries before sign-off?", "", "single", "Always - formal review\nSometimes\nRarely\nNot applicable (no vendor testing)\nNot sure", 0, 0, VENDOR_RULE),
+    ("B9", B, "QE Engineering", "End-to-End, API & Integration Quality", "List the key upstream and downstream systems.", "e.g. CRM <-> ERP", "long", "", 0, 0, "Show if B8 is not 'None' or 'Not known'"),
+    ("L8", L, "Quality Governance", "Portfolio, Partner & Value Governance", "Is testing evidence from vendors reviewed and accepted by your organization before sign-off?", "", "single", "Always - formal review\nSometimes\nRarely\nNot applicable (no vendor testing)\nNot sure", 0, 0, VENDOR_RULE),
     ("L9", L, "QE Talent & Enablement", "Talent Ratio - Developer : Tester", "How many developers work on this application (approximate)?", "Used with the tester count to work out the developer-to-tester ratio.", "number", "", 1, 1, ""),
     ("L10", L, "QE Talent & Enablement", "Capability Intelligence & Gap Analysis", "Does each module or area have a trained backup tester?", "", "single", "Yes - all areas\nSome areas\nNo - single owners\nNot sure", 0, 0, ""),
     ("L11", L, "QE Talent & Enablement", "Continuous Learning & Enablement", "Is there an onboarding process for new team members, and is learning time built into planning?", "", "single", "Yes - both\nOnboarding exists, learning time not planned\nInformal\nNone\nNot sure", 0, 0, ""),
@@ -53,22 +53,22 @@ QUESTIONS = [
     ("M2", M, "Future-Ready QE", "Continuous Quality Engineering", "When is testing of a story usually completed?", "", "single", "Within the same iteration\nIn the next iteration\nIn the end-of-PI / IP iteration\nIn a later system-test phase\nVaries widely\nNot sure", 1, 1, ""),
     ("M3", M, "QE Engineering", "Testability & Quality-by-Design", "Which test levels are normally completed inside the iteration? (Select all that apply)", "", "multi", "Unit\nStory / component\nFeature / system\nCross-team integration\nUAT\nData migration\nCutover rehearsal\nNone of these", 1, 1, ""),
 ]
-EBOOKING = {
-    "B1": "Lets customers book and change sailings, buy passenger and vehicle fares, and manage reservations. Used by the public and contact-centre agents.",
-    "B2": "Custom-built by a vendor", "B3": "SAP Hybris, iOS/Android",
+PORTAL = {
+    "B1": "Lets customers place and track orders, manage their account and pay invoices online. Used by the public and contact-centre agents.",
+    "B2": "Custom-built by a vendor", "B3": "SAP Commerce Cloud, iOS/Android",
     "B4": ["Public website", "Mobile app - iOS", "Mobile app - Android", "APIs / integrations only"],
-    "B5": "Revenue-critical", "B6": "About 2M bookings a year; peaks Jun-Sep and long weekends",
+    "B5": "Revenue-critical", "B6": "About 2M orders a year; peaks in November-December and during promotions",
     "B7": "In production - actively enhanced", "B8": "4-10",
-    "B9": "Payment gateway, SAP ERP, Terminal POS, loyalty platform, sailing schedule service",
+    "B9": "Payment gateway, SAP ERP, Point of sale, loyalty platform, product catalogue service",
     "L8": "Sometimes", "L9": "14", "L10": "Some areas", "L11": "Onboarding exists, learning time not planned",
     "L12": "Team-level repository only", "L13": "Held, actions not tracked",
     "M1": "While the story is being developed", "M2": "In the next iteration", "M3": ["Unit", "Story / component"],
 }
-MAXIMO = {
-    "B1": "Plans and tracks maintenance work orders for the fleet and terminals. Used by fleet engineers, planners and stores staff.",
-    "B2": "Packaged software (COTS) hosted by BC Ferries", "B3": "IBM Maximo",
+ERP = {
+    "B1": "Runs general ledger, accounts payable and receivable, and month-end close. Used by finance, procurement and planning staff.",
+    "B2": "Packaged software (COTS) hosted in-house", "B3": "SAP S/4HANA",
     "B4": ["Internal desktop or web application", "Mobile app - Android", "Back-office / batch processing"],
-    "B5": "Safety-critical", "B7": "In production - actively enhanced", "B8": "4-10", "L9": "6",
+    "B5": "Operations-critical", "B7": "In production - actively enhanced", "B8": "4-10", "L9": "6",
     "M1": "After development, in the same iteration", "M2": "In a later system-test phase", "M3": ["Unit", "Feature / system"],
 }
 
@@ -141,9 +141,9 @@ def load(db: Session, actor: str) -> None:
         e.status, e.via, e.created_at, e.sent_at = "recorded", "sim", inv.sent_at, inv.sent_at
         return inv
 
-    invite(apps[0], "completed", 6, "all", EBOOKING, opened=5.2, completed=4.9)
-    invite(apps[4], "completed", 6, "core", MAXIMO, opened=3, completed=2.8)
-    invite(apps[2], "progress", 6, "core", {"B1": "Sells tickets and onboard items at terminals and on vessels.",
+    invite(apps[0], "completed", 6, "all", PORTAL, opened=5.2, completed=4.9)
+    invite(apps[4], "completed", 6, "core", ERP, opened=3, completed=2.8)
+    invite(apps[2], "progress", 6, "core", {"B1": "Sells products and services at stores and service counters.",
                                             "B2": "Package with custom extensions (hybrid)", "B3": ".NET, Windows POS"}, opened=1.5)
     invite(apps[1], "opened", 3, opened=0.4)
     invite(apps[3], "sent", 3)

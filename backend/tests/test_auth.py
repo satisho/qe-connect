@@ -4,16 +4,16 @@ from conftest import PW
 def test_first_run_setup_then_locked(client):
     s = client.get("/api/auth/state").json()
     assert s["needs_setup"] is True and s["user"] is None
-    r = client.post("/api/auth/setup", json={"name": "A", "email": "a@bcferries.com", "password": "short"})
+    r = client.post("/api/auth/setup", json={"name": "A", "email": "a@example.com", "password": "short"})
     assert r.status_code == 422
-    assert client.post("/api/auth/setup", json={"name": "A", "email": "a@bcferries.com", "password": PW}).status_code == 200
+    assert client.post("/api/auth/setup", json={"name": "A", "email": "a@example.com", "password": PW}).status_code == 200
     assert client.get("/api/auth/state").json()["user"]["role"] == "admin"
-    r = client.post("/api/auth/setup", json={"name": "B", "email": "b@bcferries.com", "password": PW})
+    r = client.post("/api/auth/setup", json={"name": "B", "email": "b@example.com", "password": PW})
     assert r.status_code == 409
 
 
 def test_cookie_is_httponly_strict(client):
-    r = client.post("/api/auth/setup", json={"name": "A", "email": "a@bcferries.com", "password": PW})
+    r = client.post("/api/auth/setup", json={"name": "A", "email": "a@example.com", "password": PW})
     cookie = r.headers["set-cookie"].lower()
     assert "httponly" in cookie and "samesite=strict" in cookie
 
@@ -26,24 +26,24 @@ def test_csrf_header_required(admin):
 def test_login_logout_and_bad_password(admin):
     admin.post("/api/auth/logout")
     assert admin.get("/api/tracker").status_code == 401
-    assert admin.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": "nope"}).status_code == 401
-    assert admin.post("/api/auth/login", json={"email": "ADA@bcferries.com", "password": PW}).status_code == 200
+    assert admin.post("/api/auth/login", json={"email": "ada@example.com", "password": "nope"}).status_code == 401
+    assert admin.post("/api/auth/login", json={"email": "ADA@example.com", "password": PW}).status_code == 200
     assert admin.get("/api/tracker").status_code == 200
 
 
 def test_login_throttle(admin):
     admin.post("/api/auth/logout")
     for _ in range(5):
-        admin.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": "wrong-pass"})
-    r = admin.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
+        admin.post("/api/auth/login", json={"email": "ada@example.com", "password": "wrong-pass"})
+    r = admin.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
     assert r.status_code == 429
 
 
 def test_roles(admin):
-    r = admin.post("/api/users", json={"name": "Vi", "email": "vi@bcferries.com", "role": "viewer", "password": PW})
+    r = admin.post("/api/users", json={"name": "Vi", "email": "vi@example.com", "role": "viewer", "password": PW})
     assert r.status_code == 200
     admin.post("/api/auth/logout")
-    admin.post("/api/auth/login", json={"email": "vi@bcferries.com", "password": PW})
+    admin.post("/api/auth/login", json={"email": "vi@example.com", "password": PW})
     assert admin.get("/api/tracker").status_code == 200
     assert admin.post("/api/lobs", json={"name": "X"}).status_code == 403
     assert admin.get("/api/users").status_code == 403
@@ -57,10 +57,10 @@ def test_last_admin_protected(admin):
 
 
 def test_deactivated_user_signed_out(admin):
-    u = admin.post("/api/users", json={"name": "Ed", "email": "ed@bcferries.com", "role": "editor", "password": PW}).json()
+    u = admin.post("/api/users", json={"name": "Ed", "email": "ed@example.com", "role": "editor", "password": PW}).json()
     assert admin.patch(f"/api/users/{u['id']}", json={"active": False}).status_code == 200
     admin.post("/api/auth/logout")
-    assert admin.post("/api/auth/login", json={"email": "ed@bcferries.com", "password": PW}).status_code == 401
+    assert admin.post("/api/auth/login", json={"email": "ed@example.com", "password": PW}).status_code == 401
 
 
 def test_security_headers(client):

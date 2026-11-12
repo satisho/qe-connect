@@ -22,8 +22,9 @@ export default function InvitationEmail({ user }: { user: User }) {
   const sample = t.data?.applications.find((a) => a.email_ok) ?? t.data?.applications[0];
   const base = s.data.delivery.link_base || s.data.delivery.server.public_url;
   const vals = {
+    organization: s.data.organization.name || "your organization", team_name: s.data.organization.team_name || "QE Assessment team",
     first_name: (sample?.respondent_name || "Jordan").split(" ")[0], name: sample?.respondent_name || "Jordan Lee",
-    application: sample?.name || "eBooking", project_id: sample?.project_id || "PRJ-1042", lob: sample?.lob || "Customer Journey & Revenue Management",
+    application: sample?.name || "Customer portal", project_id: sample?.project_id || "PRJ-1042", lob: sample?.lob || "Customer & Digital Channels",
     team: sample?.team || "", due_date: new Date(Date.now() + s.data.campaign.default_due_days * 864e5).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }),
     survey_link: `${base}/s/example-link`,
   };
@@ -68,7 +69,7 @@ export default function InvitationEmail({ user }: { user: User }) {
         </div>
         <div><p className="small muted" style={{ margin: "0 0 8px" }}>Preview for {vals.application}</p>
           <MailView subject={fillTemplate(subject, vals)} body={fillTemplate(body, vals)} from={`${s.data.delivery.display_name} <${s.data.delivery.mailbox}>`}
-            to={`${vals.name} <${sample?.respondent_email || "jordan.lee@bcferries.com"}>`} /></div>
+            to={`${vals.name} <${sample?.respondent_email || "jordan.lee@example.com"}>`} /></div>
       </div>
       {reset && <Confirm title="Restore the default text?" action="Restore default" onConfirm={doReset} onClose={() => setReset(false)}><p>Your subject and message are replaced with QE Connect's original wording.</p></Confirm>}
     </>

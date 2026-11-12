@@ -62,13 +62,13 @@ export default function EmailDelivery({ user }: { user: User }) {
   return (
     <>
       <p className="eyebrow">Setup</p><h1>Email delivery</h1>
-      <p className="lede">How QE Connect sends invitations and reminders from inside BC Ferries. BC Ferries IT supplies these details. {!admin && "Only administrators can change them."}</p>
+      <p className="lede">How QE Connect sends invitations and reminders from inside your organization. Your IT team supplies these details. {!admin && "Only administrators can change them."}</p>
       <div className="routes" role="radiogroup" aria-label="Delivery method">
-        {route("graph", "Microsoft 365 (Graph)", "Sends from a BC Ferries mailbox through Microsoft Graph. No SMTP needed.", <span className="tag info">Recommended</span>)}
+        {route("graph", "Microsoft 365 (Graph)", "Sends from your organization's mailbox through Microsoft Graph. No SMTP needed.", <span className="tag info">Recommended</span>)}
         {route("smtp", "SMTP relay", "Sends through your Exchange server or an Exchange Online relay connector.")}
         {route("sim", "Not connected", "Emails are recorded under Sent emails only. Use this for demos and dry runs.")}
       </div>
-      {f.mode === "graph" && <div className="panel"><header><h2>Microsoft 365 connection</h2><p className="small muted" style={{ margin: 0 }}>From the app registration BC Ferries IT creates in Microsoft Entra ID.</p></header>
+      {f.mode === "graph" && <div className="panel"><header><h2>Microsoft 365 connection</h2><p className="small muted" style={{ margin: 0 }}>From the app registration your IT creates in Microsoft Entra ID.</p></header>
         <div className="fgrid">
           {fld("tenant", "Directory (tenant) ID", { ph: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" })}
           {fld("client", "Application (client) ID", { ph: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" })}
@@ -82,25 +82,25 @@ export default function EmailDelivery({ user }: { user: User }) {
         </div></div>}
       {f.mode === "smtp" && <div className="panel"><header><h2>SMTP relay</h2><p className="small muted" style={{ margin: 0 }}>An Exchange receive connector (on-premises) or an Exchange Online relay connector that accepts mail from the QE Connect server.</p></header>
         <div className="fgrid">
-          {fld("host", "Server", { ph: "smtp.bcferries.local or bcferries-com.mail.protection.outlook.com" })}
+          {fld("host", "Server", { ph: "smtp.example.local or example-com.mail.protection.outlook.com" })}
           {fld("port", "Port", { type: "number", ph: "587", hint: "Usually 25 for a relay connector, 587 with sign-in." })}
           <div className="full"><span className="f">Encryption</span>{seg("security", [["starttls", "STARTTLS"], ["tls", "TLS (SMTPS)"], ["none", "None (internal only)"]])}</div>
           <div className="full"><span className="f">Authentication</span>{seg("smtp_auth", [["none", "None, server IP is allow-listed"], ["login", "Username and password"]])}</div>
-          {f.smtp_auth === "login" && <>{fld("username", "Username", { ph: "svc-qe-connect@bcferries.com" })}
+          {f.smtp_auth === "login" && <>{fld("username", "Username", { ph: "svc-qe-connect@example.com" })}
             <div><span className="f">Password</span>{envFlag(srv.smtp_password_set, "QEC_SMTP_PASSWORD")}</div></>}
         </div>
         {f.smtp_auth === "login" && /office365|outlook/i.test(f.host) && <div className="note warn">Microsoft is retiring basic username-and-password sign-in for SMTP in Exchange Online. Prefer Microsoft 365 (Graph) or an IP-based relay connector.</div>}
       </div>}
       {f.mode !== "sim" && <div className="panel"><header><h2>Sender</h2></header>
         <div className="fgrid">
-          {fld("mailbox", "Send from mailbox", { type: "email", ph: "qe-connect@bcferries.com", hint: "A shared mailbox works well, so replies reach the whole team." })}
+          {fld("mailbox", "Send from mailbox", { type: "email", ph: "qe-connect@example.com", hint: "A shared mailbox works well, so replies reach the whole team." })}
           {fld("display_name", "Display name", { ph: "QE Connect", hint: f.mode === "graph" ? "Microsoft 365 shows the mailbox's own display name." : undefined })}
-          {fld("reply_to", "Reply-to (optional)", { type: "email", ph: "qe-assessment-team@bcferries.com" })}
+          {fld("reply_to", "Reply-to (optional)", { type: "email", ph: "qe-assessment-team@example.com" })}
           {fld("rate_per_minute", "Most emails per minute", { type: "number", hint: "Exchange Online accepts about 30 messages a minute per mailbox." })}
         </div></div>}
       <div className="panel"><header><h2>Survey links</h2></header>
         <div className="fgrid">{fld("link_base", "Survey link address", { full: true, ph: srv.public_url,
-          hint: <>The address respondents open from the email. It must be reachable from their computers and phones (BC Ferries network or VPN). Leave empty to use {srv.public_url} from the server settings.</> })}</div></div>
+          hint: <>The address respondents open from the email. It must be reachable from their computers and phones (your network or VPN). Leave empty to use {srv.public_url} from the server settings.</> })}</div></div>
       {admin && (dirty ? <div className="sticky-save"><button type="button" className="btn" onClick={() => setDirty(false)}>Discard</button><button type="button" className="btn primary" onClick={save}>Save email delivery</button></div> : null)}
 
       {admin && <div className="panel"><header><h2>Send a test email</h2><p className="small muted" style={{ margin: 0 }}>Checks the settings and sends one message. Invitations can go out once this passes.</p></header>
@@ -111,7 +111,7 @@ export default function EmailDelivery({ user }: { user: User }) {
         {!t && d.problems.length > 0 && f.mode !== "sim" && <div className="note warn"><b>Still needed:</b><ul>{d.problems.map((p) => <li key={p}>{p}</li>)}</ul></div>}
       </div>}
 
-      <details className="panel"><summary>What to ask BC Ferries IT for</summary>
+      <details className="panel"><summary>What to ask your IT team for</summary>
         <ul className="ask">
           {f.mode === "smtp" ? <>
             <li>An SMTP relay (receive connector) that accepts mail from the QE Connect server's IP address, with its host name and port.</li>
@@ -119,7 +119,7 @@ export default function EmailDelivery({ user }: { user: User }) {
             <li>A Microsoft Entra ID app registration with the Mail.Send application permission and admin consent.</li>
             <li>An application access policy (or RBAC for Applications scope) that limits the app to the QE Connect mailbox only, so it cannot send as anyone else.</li>
             <li>A certificate (preferred) or client secret for the app, with its expiry date.</li></>}
-          <li>A shared mailbox such as qe-connect@bcferries.com, with the assessment team as members so they see replies.</li>
+          <li>A shared mailbox such as qe-connect@example.com, with the assessment team as members so they see replies.</li>
           <li>An internal web address (DNS name and certificate) for the survey links.</li>
           <li>Outbound access from the QE Connect server to {f.mode === "smtp" ? "the relay host and port" : "graph.microsoft.com and login.microsoftonline.com on port 443"}.</li>
         </ul></details>

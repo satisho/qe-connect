@@ -1,6 +1,26 @@
 # Changelog
 
-## 1.0.1 (2026-10-27) — security release
+## 2.0.0 (2026-11-11) — QE Connect
+
+QE Connect 2.0 is **client-neutral**: install one copy per client organization and give it that organization's name
+and colour. Every 1.0.1 feature
+and security control is kept; nothing about the survey, tracker, email delivery, backups or sign-in has been removed.
+
+- **Organization branding** (Administration › Organization, admins only): organization name, assessment team name and
+  an accent colour. They appear in the portal header, the sign-in page, the respondent's survey and the invitation
+  email's survey button. The first-run setup screen asks for the organization name.
+- **New email placeholders** `{organization}` and `{team_name}`. The default invitation email uses them, so it reads
+  correctly for any client. Without a name set, emails say "your organization".
+- **Client-neutral content**: the sample data, question examples, answer options, import templates, hints, email
+  delivery guidance and documentation no longer mention a specific client. Sample addresses use `example.com`.
+- **New look**: new QE Connect mark and a neutral deep-teal theme (light and dark), replaced by the organization's colour
+  when one is set.
+- **Upgrading from 1.0.x**: unzip 2.0 over the old folder (keep `data` and `.env`); the database is upgraded
+  automatically and 1.0.x backups still restore. Existing settings are kept; set Administration › Organization.
+- Settings keep the `QEC_` prefix, so existing `.env` files work unchanged.
+- Tests for branding, its permissions and validation, backups, and a check that no client-specific text ships.
+
+## 1.0.1 (2026-10-27) — QE Connect security release
 
 Fixes every finding from the 1.0.0 security review pack that can be fixed in the application. No new survey features.
 
@@ -29,7 +49,7 @@ Fixes every finding from the 1.0.0 security review pack that can be fixed in the
 - Database migration 0002 adds the new columns and the security log; existing data is kept and each survey gets its own
   reference. Downgrade is supported.
 
-## 1.0.0 (2026-10-27)
+## 1.0.0 (2026-10-27) — QE Connect
 
 First release of QE Connect, phase 1 of the QE Community of Practice platform: the QE Assessment survey.
 

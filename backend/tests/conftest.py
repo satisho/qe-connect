@@ -34,7 +34,7 @@ def client(tmp_path):
 
 @pytest.fixture()
 def admin(client):
-    r = client.post("/api/auth/setup", json={"name": "Ada Admin", "email": "ada@bcferries.com", "password": PW})
+    r = client.post("/api/auth/setup", json={"name": "Ada Admin", "email": "ada@example.com", "password": PW})
     assert r.status_code == 200, r.text
     return client
 

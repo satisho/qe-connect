@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
-import { Link, Mark, navigate, usePath } from "./lib";
-import type { AuthState, Settings, Tracker, User } from "./types";
+import { Brand, Link, navigate, useAccent, usePath } from "./lib";
+import type { AuthState, Organization, Settings, Tracker, User } from "./types";
 import SignIn from "./pages/SignIn";
 import TrackerPage from "./pages/Tracker";
 import SentEmails from "./pages/SentEmails";
@@ -52,19 +52,20 @@ function Portal({ path }: { path: string }) {
     return () => window.removeEventListener("qec:signed-out", on);
   }, [qc]);
 
+  useAccent(auth.data?.organization?.accent);
   if (auth.isLoading) return <div className="loading">Loading QE Connect…</div>;
   if (auth.isError || !auth.data) return <div className="loading">QE Connect isn't responding. Check that it is running, then reload this page.</div>;
   const st = auth.data;
-  if (!st.user) return <SignIn needsSetup={st.needs_setup} version={st.version} pending={st.pending} notice={st.notice || notice} />;
+  if (!st.user) return <SignIn needsSetup={st.needs_setup} version={st.version} org={st.organization} pending={st.pending} notice={st.notice || notice} />;
   if (path === "/preview") return <Survey preview />;
   if (!PAGES[path]) {
     navigate("/tracker", true);
     return null;
   }
-  return <Shell user={st.user} campaign={st.campaign} version={st.version} path={path} />;
+  return <Shell user={st.user} campaign={st.campaign} org={st.organization} version={st.version} path={path} />;
 }
 
-function Shell({ user, campaign, version, path }: { user: User; campaign: string; version: string; path: string }) {
+function Shell({ user, campaign, org, version, path }: { user: User; campaign: string; org: Organization; version: string; path: string }) {
   const tracker = useQuery({ queryKey: ["tracker"], queryFn: () => api.get<Tracker>("/api/tracker"), refetchInterval: 15_000 });
   const settings = useQuery({ queryKey: ["settings"], queryFn: () => api.get<Settings>("/api/settings") });
   const qcount = useQuery({ queryKey: ["questions"], queryFn: () => api.get<unknown[]>("/api/questions") });
@@ -105,7 +106,7 @@ function Shell({ user, campaign, version, path }: { user: User; campaign: string
     <>
       <header className="top">
         <div className="wrap">
-          <div className="brand"><Mark /><div><b>QE Connect</b><small>Assessment portal · {campaign}</small></div></div>
+          <Brand org={org} sub={`Assessment portal · ${campaign}`} />
           <div className="who" ref={menuRef}>
             <button type="button" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-haspopup="menu">
               <span className="avatar">{initials}</span><span>{user.name}</span>

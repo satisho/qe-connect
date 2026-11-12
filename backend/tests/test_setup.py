@@ -5,7 +5,7 @@ from openpyxl import Workbook
 
 def test_lobs_add_and_guarded_delete(sampled):
     lobs = sampled.get("/api/lobs").json()
-    assert [x["name"] for x in lobs][:2] == ["Customer Journey & Revenue Management", "Asset Management & Fleet Reliability"]
+    assert [x["name"] for x in lobs][:2] == ["Customer & Digital Channels", "Operations & Enterprise Systems"]
     assert sampled.post("/api/lobs", json={"name": "Corporate Services"}).status_code == 200
     assert sampled.post("/api/lobs", json={"name": "corporate services"}).status_code == 409
     used = lobs[0]
@@ -16,9 +16,9 @@ def test_lobs_add_and_guarded_delete(sampled):
 
 def test_import_applications_paste(sampled):
     text = ("Application\tProject ID\tLine of Business\tDelivery team / ART\tRespondent name\tRespondent email\n"
-            "Web check-in\tPRJ-2001\tCorporate Services\tART#4\tNina Patel\tnina.patel@bcferries.com\n"
-            "Bad row\t\tCustomer Journey & Revenue Management\t\tTom\tnot-an-email\n"
-            "eBooking\tPRJ-1042\tCustomer Journey & Revenue Management\tART#1\tJordan Lee\tjordan.new@bcferries.com\n")
+            "Web check-in\tPRJ-2001\tCorporate Services\tART#4\tNina Patel\tnina.patel@example.com\n"
+            "Bad row\t\tCustomer & Digital Channels\t\tTom\tnot-an-email\n"
+            "Customer portal\tPRJ-1042\tCustomer & Digital Channels\tART#1\tJordan Lee\tjordan.new@example.com\n")
     r = sampled.post("/api/applications/import", data={"mode": "add", "text": text})
     assert r.status_code == 200, r.text
     res = r.json()
@@ -26,8 +26,8 @@ def test_import_applications_paste(sampled):
     assert res["created_lobs"] == ["Corporate Services"]
     assert any("not-an-email" in w for w in res["warnings"])
     apps = {a["name"]: a for a in sampled.get("/api/applications").json()}
-    assert apps["eBooking"]["respondent_email"] == "jordan.new@bcferries.com"
-    assert apps["eBooking"]["status"] == "completed"  # updating kept the response
+    assert apps["Customer portal"]["respondent_email"] == "jordan.new@example.com"
+    assert apps["Customer portal"]["status"] == "completed"  # updating kept the response
 
 
 def test_import_applications_needs_header(sampled):
@@ -39,7 +39,7 @@ def _bank_xlsx() -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "Survey Questions"
-    ws.append(["BC Ferries question bank"])  # a title row above the header
+    ws.append(["Sample question bank"])  # a title row above the header
     ws.append(["Q ID", "Section", "Pillar", "Focus area", "Question (as shown to respondent)", "Help text (shown under the question)",
                "Response type", "Answer options (one per line)", "Required?", "Priority", "Show-if logic", "Source"])
     ws.append(["A2", "A. About You & the Application", "Context (not scored)", "Respondent", "Which Line of Business?", "",
@@ -55,8 +55,8 @@ def _bank_xlsx() -> bytes:
                 "Always\nSometimes\nNot sure", "No", "Optional", "Show if C3 includes a vendor, system integrator or SaaS vendor"])
     ws3 = wb.create_sheet("Lists")
     ws3.append(["LOB", "Response types"])
-    ws3.append(["Customer Journey & Revenue Management", "Single choice"])
-    ws3.append(["Terminal Operations", "Long text"])
+    ws3.append(["Customer & Digital Channels", "Single choice"])
+    ws3.append(["Shared Services", "Long text"])
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
@@ -64,13 +64,13 @@ def _bank_xlsx() -> bytes:
 
 def test_import_questions_from_workbook(admin):
     r = admin.post("/api/questions/import", data={"mode": "replace"},
-                   files={"file": ("BC_Ferries_QA_Survey_Question_Bank_V2.xlsx", _bank_xlsx(),
+                   files={"file": ("QA_Survey_Question_Bank.xlsx", _bank_xlsx(),
                                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")})
     assert r.status_code == 200, r.text
     res = r.json()
     assert res["imported"] == 4
     assert len(res["sheets"]) == 2
-    assert set(res["created_lobs"]) == {"Customer Journey & Revenue Management", "Terminal Operations"}
+    assert set(res["created_lobs"]) == {"Customer & Digital Channels", "Shared Services"}
     assert any("L8" in w and "not recognised" in w for w in res["warnings"])
     qs = {q["qid"]: q for q in admin.get("/api/questions").json()}
     assert qs["B8"]["options"] == ["None", "1-3", "4-10", "Not known"]
@@ -82,7 +82,7 @@ def test_import_questions_from_workbook(admin):
     assert r.json()["rule"]["kind"] == "match"
     prev = admin.get("/api/survey-preview").json()["questions"]
     a2 = [q for q in prev if q["qid"] == "A2"][0]
-    assert "Terminal Operations" in a2["options"] and a2["options"][-1].startswith("Other")
+    assert "Shared Services" in a2["options"] and a2["options"][-1].startswith("Other")
 
 
 def test_rejects_xls_and_bad_files(admin):

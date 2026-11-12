@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "2.0.0"
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 PROJECT_DIR = BACKEND_DIR.parent

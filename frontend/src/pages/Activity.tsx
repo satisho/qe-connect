@@ -9,7 +9,7 @@ const LABELS: Record<string, string> = {
   "lob.rename": "Renamed a line of business", "lob.delete": "Removed a line of business", "lob.import": "Imported lines of business",
   "app.add": "Added an application", "app.respondent": "Changed a respondent", "app.delete": "Removed an application",
   "app.import": "Imported applications", "question.update": "Edited a question", "question.import": "Imported questions",
-  "settings.campaign": "Renamed the survey", "settings.email": "Changed the invitation email", "settings.delivery": "Changed email delivery",
+  "settings.organization": "Changed the organization details", "settings.campaign": "Renamed the survey", "settings.email": "Changed the invitation email", "settings.delivery": "Changed email delivery",
   "mail.test": "Sent a test email", "invite.send": "Sent invitations", "invite.remind": "Sent reminders", "invite.reopen": "Reopened a response",
   "invite.withdraw": "Cancelled a survey link", "survey.open": "Respondent opened the survey", "survey.submit": "Respondent submitted",
   "response.download": "Downloaded a response", "response.export": "Exported responses", "email.retry": "Retried an email",

@@ -4,11 +4,16 @@ import { api, errorText } from "../api";
 import { Confirm, Modal, useToast } from "../lib";
 import type { Policy, Settings, User } from "../types";
 
-export default function Administration(_: { user: User }) {
+const HEX = /^#[0-9a-f]{6}$/i;
+
+export default function Administration({ user }: { user: User }) {
   const qc = useQueryClient();
   const toast = useToast();
   const s = useQuery({ queryKey: ["settings"], queryFn: () => api.get<Settings>("/api/settings") });
   const pol = useQuery({ queryKey: ["policy"], queryFn: () => api.get<Policy>("/api/security/policy") });
+  const [orgName, setOrgName] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [accent, setAccent] = useState("");
   const [name, setName] = useState("");
   const [days, setDays] = useState(14);
   const [req, setReq] = useState(false);
@@ -18,9 +23,16 @@ export default function Administration(_: { user: User }) {
   const [restore, setRestore] = useState<File | null>(null);
   const [restorePw, setRestorePw] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { if (s.data) { setName(s.data.campaign.name); setDays(s.data.campaign.default_due_days); } }, [s.data]);
+  useEffect(() => { if (s.data) { setName(s.data.campaign.name); setDays(s.data.campaign.default_due_days);
+    setOrgName(s.data.organization.name); setTeamName(s.data.organization.team_name); setAccent(s.data.organization.accent); } }, [s.data]);
   useEffect(() => { if (pol.data) { setReq(pol.data.mfa_required); setIdle(pol.data.idle_minutes); } }, [pol.data]);
   const all = () => qc.invalidateQueries();
+  const admin = user.role === "admin";
+  const badAccent = accent !== "" && !HEX.test(accent);
+  const saveOrg = async () => {
+    try { await api.put("/api/settings/organization", { name: orgName, team_name: teamName, accent }); toast("Organization saved"); all(); }
+    catch (e) { toast(errorText(e), true); }
+  };
   const saveCampaign = async () => {
     try { await api.put("/api/settings/campaign", { name, default_due_days: days }); toast("Saved"); all(); } catch (e) { toast(errorText(e), true); }
   };
@@ -50,6 +62,24 @@ export default function Administration(_: { user: User }) {
   return (
     <>
       <p className="eyebrow">Admin</p><h1>Administration</h1>
+      <div className="panel"><header><h2>Organization</h2>
+        <p className="small muted" style={{ margin: 0 }}>Who this installation of QE Connect is for. The name and colour appear in the portal, on the survey and in invitation emails.</p></header>
+        <div className="fgrid">
+          <div><label className="f" htmlFor="on">Organization name</label><input id="on" type="text" maxLength={120} value={orgName} disabled={!admin} onChange={(e) => setOrgName(e.target.value)} placeholder="e.g. Contoso Ltd" />
+            <p className="hint">Used for the <code>{"{organization}"}</code> placeholder in the invitation email.</p></div>
+          <div><label className="f" htmlFor="tn">Assessment team name</label><input id="tn" type="text" maxLength={80} value={teamName} disabled={!admin} onChange={(e) => setTeamName(e.target.value)} placeholder="QE Assessment team" />
+            <p className="hint">How respondents see the team, for example "Quality Engineering CoE". Placeholder <code>{"{team_name}"}</code>.</p></div>
+          <div><label className="f" htmlFor="ac">Accent colour</label>
+            <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
+              <input className="swatch" type="color" aria-label="Pick accent colour" value={HEX.test(accent) ? accent : "#0E6B6B"} disabled={!admin} onChange={(e) => setAccent(e.target.value.toUpperCase())} />
+              <input id="ac" type="text" maxLength={7} value={accent} disabled={!admin} onChange={(e) => setAccent(e.target.value.trim())} placeholder="#0E6B6B (default)" style={{ maxWidth: 160 }} />
+              {accent && admin && <button type="button" className="btn sm ghost" onClick={() => setAccent("")}>Use default</button>}
+            </div>
+            <p className={badAccent ? "hint err" : "hint"}>{badAccent ? "Use the form #RRGGBB, for example #7A1F5C." : "The client's brand colour, used for buttons, links and the survey button in emails."}</p></div>
+        </div>
+        {admin ? <div className="row" style={{ marginTop: 12 }}><button type="button" className="btn primary" disabled={badAccent} onClick={saveOrg}>Save organization</button></div>
+          : <p className="small muted" style={{ marginBottom: 0 }}>Only administrators can change these.</p>}
+      </div>
       <div className="panel"><header><h2>Sign-in security</h2></header>
         <div className="fgrid">
           <div className="full"><label className="row" style={{ gap: 8, fontWeight: 600 }}>

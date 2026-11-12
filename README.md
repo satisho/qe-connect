@@ -1,10 +1,22 @@
 # QE Connect
 
-QE Connect is the BC Ferries QE Assessment survey application, and the first part of the QE Community of Practice
-platform. The assessment team sets up the applications, respondents and question bank, sends each respondent a survey
+QE Connect is a client-neutral QE Assessment survey platform, and the first part of a QE Community of Practice
+platform. Install one copy per client organization and give it that organization's name and colour. The assessment team sets up the applications, respondents and question bank, sends each respondent a survey
 link by email, follows progress on a tracker, and downloads each response as soon as it comes back.
 
-Version 1.0.1. See [CHANGELOG.md](CHANGELOG.md).
+Version 2.0.0. See [CHANGELOG.md](CHANGELOG.md). QE Connect 2.0 is the client-neutral version of QE Connect 1.0.1.
+
+## Make it yours: organization branding
+
+Each installation belongs to one client organization. Set it up once:
+
+- **First run**: the setup screen asks for the organization name along with the first administrator.
+- **Administration › Organization** (administrators): organization name, assessment team name (for example
+  "Quality Engineering CoE") and accent colour (`#RRGGBB`, the client's brand colour). Leave the colour empty for the
+  default teal.
+- The invitation email can use `{organization}` and `{team_name}`; the default text already does.
+
+The product name QE Connect stays on screen; the organization's name is shown beside it.
 
 ---
 
@@ -33,7 +45,7 @@ Nothing else is needed: Node.js is only required if you change the web interface
 
 1. **Setup › Lines of business**: the LOB choices. They also come in automatically from the question bank's Lists
    sheet and from the applications import.
-2. **Setup › Questions**: import the question bank workbook (for example `BC_Ferries_Application_QA_Survey_Question_Bank_V2.xlsx`)
+2. **Setup › Questions**: import the client's question bank workbook (for example `QA_Survey_Question_Bank.xlsx`)
    as it is. Every sheet that has *Q ID* and *Question* columns is read; columns are matched by header name, so order
    doesn't matter and a title row above the header is fine. Read columns: Q ID, Section, Pillar, Focus area,
    Question, Help text, Response type, Answer options (one per line in the cell), Required?, Priority (Core /
@@ -64,11 +76,11 @@ team's answers on file (name, LOB, application, delivery team) are filled in for
 Choose one route on **Setup › Email delivery**. Secrets never go into the portal or the database; they are set in
 the `.env` file on the server and the page shows whether they are present.
 
-**Microsoft 365 (Graph), recommended.** Ask BC Ferries IT for:
+**Microsoft 365 (Graph), recommended.** Ask the client's IT team for:
 - an Entra ID app registration with the **Mail.Send** application permission and admin consent;
 - an application access policy (or RBAC for Applications) limiting the app to the QE Connect mailbox only;
 - a certificate (preferred) or client secret;
-- a shared mailbox such as `qe-connect@bcferries.com`;
+- a shared mailbox such as `qe-connect@example.com`;
 - outbound HTTPS from the QE Connect server to `login.microsoftonline.com` and `graph.microsoft.com`.
 
 Enter the tenant ID, client ID and mailbox on the page. Put the secret in `.env` as `QEC_MAIL_CLIENT_SECRET=...`,
@@ -88,7 +100,7 @@ a minute per mailbox). Failed emails are retried twice, then shown as **Failed**
 button.
 
 **Survey link address** must be reachable from respondents' computers and phones, for example
-`https://qe-connect.bcferries.local`. If it is empty, `QEC_PUBLIC_URL` is used.
+`https://qe-connect.example.local`. If it is empty, `QEC_PUBLIC_URL` is used.
 
 ---
 
@@ -140,8 +152,8 @@ Use forward slashes in paths, even on Windows.
   `QEC_ALLOWED_HOSTS=<computer-name>,<computer-name>.<domain>`,
   allow port 8000 in Windows Firewall, and share that address. A laptop that sleeps takes the survey offline, so this
   suits a short pilot only.
-- **BC Ferries network (recommended for the real survey)**: a small Windows or Linux server or VM; an internal DNS
-  name such as `qe-connect.bcferries.local`; an HTTPS certificate from the BC Ferries internal certificate authority
+- **Client network (recommended for the real survey)**: a small Windows or Linux server or VM; an internal DNS
+  name such as `qe-connect.example.local`; an HTTPS certificate from the client's internal certificate authority
   (put both the short and full names in the certificate); a reverse proxy (IIS, nginx) on port 443 in front of
   QE Connect; QE Connect run as a service (NSSM on Windows, systemd on Linux); `QEC_TRUSTED_PROXIES` set to the proxy's
   address; `QEC_SECURE_COOKIES=true`; sign-in codes required for everyone; nightly
@@ -161,7 +173,7 @@ Use forward slashes in paths, even on Windows.
 - **Sign-in codes**: anyone can turn on an authenticator app (Microsoft Authenticator, Google Authenticator and
   others) from the account menu; **Administration › Sign-in security** can require it for everyone. Lost phone: an
   administrator uses **Team › Reset codes**, or on the server run
-  `..\.venv\Scripts\python -m app --reset-mfa someone@bcferries.com` from the `backend` folder.
+  `..\.venv\Scripts\python -m app --reset-mfa someone@example.com` from the `backend` folder.
 - Sessions end after 30 minutes without activity (changeable) and after 12 hours at most.
 - **Security log** (Admin › Security log): sign-ins including failures and blocks, sign-outs, sign-in codes, account,
   role and policy changes, downloads, exports and deletions; filter and download as CSV.
@@ -181,10 +193,10 @@ Use forward slashes in paths, even on Windows.
 - The activity log records sign-ins, changes, sends, downloads and survey submissions.
 
 Forgotten administrator password: stop QE Connect, open a command prompt in the `backend` folder and run
-`..\.venv\Scripts\python -m app --reset-password you@bcferries.com`.
+`..\.venv\Scripts\python -m app --reset-password you@example.com`.
 
-Upgrading from 1.0.0: stop QE Connect, back up the `data` folder, unzip 1.0.1 over the old folder (keep `data`
-and `.env`), and run `start.bat`. The database is upgraded automatically.
+Upgrading from 1.0.x: stop QE Connect, back up the `data` folder, unzip 2.0 over the old folder (keep `data` and
+`.env`), and run `start.bat`. The database is upgraded automatically; then set **Administration › Organization**.
 
 ---
 

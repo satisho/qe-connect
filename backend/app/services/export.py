@@ -109,8 +109,8 @@ def all_responses(apps: list[Application], qs: list[Question], fmt: str) -> byte
 def template(kind: str) -> bytes:
     if kind == "applications":
         rows = [["Application", "Project ID", "Line of Business", "Delivery team / ART", "Respondent name", "Respondent email"],
-                ["eBooking", "PRJ-1042", "Customer Journey & Revenue Management", "ART#1 Digital Customer Experience",
-                 "Jordan Lee", "jordan.lee@bcferries.com"]]
+                ["Customer portal", "PRJ-1042", "Customer & Digital Channels", "ART#1 Digital Customer Experience",
+                 "Jordan Lee", "jordan.lee@example.com"]]
         return to_xlsx([("Applications", rows)], {"Applications": [26, 12, 34, 30, 20, 30]})
     rows = [["Q ID", "Section", "Pillar", "Focus area", "Question (as shown to respondent)", "Help text",
              "Response type", "Answer options (one per line)", "Required?", "Priority", "Show-if logic", "Source",
@@ -119,8 +119,8 @@ def template(kind: str) -> bytes:
              "Approximately how many other systems does it integrate with?", "", "Single choice",
              "None\n1-3\n4-10\n11-25\nMore than 25\nNot known", "Yes", "Core", "", "", "Scoping"],
             ["B9", "B. Application Profile", "QE Engineering", "End-to-End, API & Integration Quality",
-             "List the key upstream and downstream systems.", "e.g. Maximo <-> Oracle EBS", "Long text", "", "No",
+             "List the key upstream and downstream systems.", "e.g. CRM <-> ERP", "Long text", "", "No",
              "Optional", "Show if B8 is not 'None' or 'Not known'", "", "Scoping"]]
-    return to_xlsx([("Survey Questions", rows), ("Lists", [["Line of Business"], ["Customer Journey & Revenue Management"],
-                                                           ["Asset Management & Fleet Reliability"]])],
+    return to_xlsx([("Survey Questions", rows), ("Lists", [["Line of Business"], ["Customer & Digital Channels"],
+                                                           ["Operations & Enterprise Systems"]])],
                    {"Survey Questions": [7, 26, 20, 26, 50, 30, 15, 34, 10, 10, 34, 20, 14], "Lists": [40]})

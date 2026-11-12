@@ -1,4 +1,4 @@
-"""Survey name, invitation email text and email delivery settings."""
+"""Organization branding, survey name, invitation email text and email delivery settings."""
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -14,6 +14,15 @@ from ..security import can_edit, can_view, is_admin
 from ..services import hosts, mail, seclog, store
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
+
+
+HEX = r"^(#[0-9A-Fa-f]{6})?$"
+
+
+class OrganizationIn(BaseModel):
+    name: str = Field("", max_length=120)
+    team_name: str = Field("", max_length=80)
+    accent: str = Field("", pattern=HEX)
 
 
 class CampaignIn(BaseModel):
@@ -58,9 +67,19 @@ def delivery_out(db: Session) -> dict:
 
 @router.get("")
 def all_settings(db: Session = Depends(get_db), _: User = Depends(can_view)):
-    return {"campaign": store.get(db, "campaign"), "email": store.get(db, "email"), "delivery": delivery_out(db),
-            "placeholders": ["{first_name}", "{name}", "{application}", "{project_id}", "{lob}", "{team}",
+    return {"organization": store.get(db, "organization"), "campaign": store.get(db, "campaign"), "email": store.get(db, "email"), "delivery": delivery_out(db),
+            "placeholders": ["{organization}", "{team_name}", "{first_name}", "{name}", "{application}", "{project_id}", "{lob}", "{team}",
                              "{due_date}", "{survey_link}"]}
+
+
+@router.put("/organization")
+def put_organization(body: OrganizationIn, db: Session = Depends(get_db), me: User = Depends(is_admin)):
+    data = {"name": mail.one_line(body.name), "team_name": mail.one_line(body.team_name) or "QE Assessment team",
+            "accent": body.accent.upper()}
+    store.put(db, "organization", data)
+    store.log(db, me.email, "settings.organization", data["name"] or "Organization details cleared")
+    db.commit()
+    return store.get(db, "organization")
 
 
 @router.put("/campaign")

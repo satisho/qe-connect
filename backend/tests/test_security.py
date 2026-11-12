@@ -35,11 +35,11 @@ def _events(kind=None):
 # ---------------------------------------------------------------- SEC-01
 def test_sec01_line_breaks_removed_and_queue_never_stalls(sampled, monkeypatch):
     c = sampled
-    a = _apps(c)["Vessel maintenance mobile"]
-    r = c.patch(f"/api/applications/{a['id']}", json={"name": "Vessel\nmaintenance\r\napp"})
-    assert r.json()["name"] == "Vessel maintenance app"
+    a = _apps(c)["Field service mobile"]
+    r = c.patch(f"/api/applications/{a['id']}", json={"name": "Field\nservice\r\napp"})
+    assert r.json()["name"] == "Field service app"
     c.put("/api/settings/delivery", json={"mode": "smtp", "host": "127.0.0.1", "port": 2526, "security": "none",
-                                          "mailbox": "qe-connect@bcferries.com"})
+                                          "mailbox": "qe-connect@example.com"})
     c.post("/api/invitations/send", json={"application_ids": [a["id"], _apps(c)["Contact centre CRM"]["id"]]})
     calls = []
 
@@ -127,7 +127,7 @@ def test_sec05_mfa_setup_signin_and_replay(admin):
     assert c.post("/api/auth/mfa/setup/confirm", json={"code": _code(start["secret"])}).status_code == 200
     assert c.get("/api/auth/state").json()["user"]["mfa_enabled"] is True
     c.post("/api/auth/logout")
-    r = c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
+    r = c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
     assert r.json()["pending"]["step"] == "verify" and r.json()["user"] is None
     assert c.get("/api/tracker").status_code == 401  # password alone is not enough
     assert c.post("/api/auth/mfa/verify", json={"code": "123456"}).status_code == 401
@@ -136,16 +136,16 @@ def test_sec05_mfa_setup_signin_and_replay(admin):
     assert c.get("/api/tracker").status_code == 200
     # the same code can't be used twice
     c.post("/api/auth/logout")
-    c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
+    c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
     assert c.post("/api/auth/mfa/verify", json={"code": code}).status_code == 401
 
 
 def test_sec05_policy_requires_mfa_and_admin_reset(admin):
     c = admin
-    c.post("/api/users", json={"name": "Ed", "email": "ed@bcferries.com", "role": "editor", "password": PW})
+    c.post("/api/users", json={"name": "Ed", "email": "ed@example.com", "role": "editor", "password": PW})
     assert c.put("/api/security/policy", json={"mfa_required": True, "idle_minutes": 30}).json()["mfa_required"] is True
     c.post("/api/auth/logout")
-    r = c.post("/api/auth/login", json={"email": "ed@bcferries.com", "password": PW}).json()
+    r = c.post("/api/auth/login", json={"email": "ed@example.com", "password": PW}).json()
     assert r["pending"]["step"] == "setup"
     assert c.get("/api/applications").status_code == 401
     secret = c.post("/api/auth/mfa/setup/start").json()["secret"]
@@ -154,11 +154,11 @@ def test_sec05_policy_requires_mfa_and_admin_reset(admin):
     assert c.post("/api/auth/mfa/disable", json={"password": PW}).status_code == 409  # policy forbids turning it off
     c.post("/api/auth/logout")
     # admin (no MFA yet) must set it up too, then resets Ed's
-    r = c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW}).json()
+    r = c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW}).json()
     assert r["pending"]["step"] == "setup"
     s2 = c.post("/api/auth/mfa/setup/start").json()["secret"]
     c.post("/api/auth/mfa/setup/confirm", json={"code": _code(s2)})
-    ed = [u for u in c.get("/api/users").json() if u["email"] == "ed@bcferries.com"][0]
+    ed = [u for u in c.get("/api/users").json() if u["email"] == "ed@example.com"][0]
     assert ed["mfa_enabled"] is True
     assert c.patch(f"/api/users/{ed['id']}", json={"reset_mfa": True}).json()["mfa_enabled"] is False
 
@@ -168,7 +168,7 @@ def test_sec05_pending_session_expires(admin):
     secret = c.post("/api/auth/mfa/setup/start").json()["secret"]
     c.post("/api/auth/mfa/setup/confirm", json={"code": _code(secret)})
     c.post("/api/auth/logout")
-    c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
+    c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
     s = dbmod.SessionLocal()
     s.execute(update(UserSession).values(expires_at=utcnow() - timedelta(seconds=1)))
     s.commit()
@@ -180,28 +180,28 @@ def test_sec05_pending_session_expires(admin):
 def test_sec06_security_log(admin):
     c = admin
     c.post("/api/auth/logout")
-    c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": "Wrong-pass-1"})
-    c.post("/api/auth/login", json={"email": "nobody@bcferries.com", "password": "Wrong-pass-1"})
-    c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
-    c.post("/api/users", json={"name": "Vi", "email": "vi@bcferries.com", "role": "viewer", "password": PW})
+    c.post("/api/auth/login", json={"email": "ada@example.com", "password": "Wrong-pass-1"})
+    c.post("/api/auth/login", json={"email": "nobody@example.com", "password": "Wrong-pass-1"})
+    c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
+    c.post("/api/users", json={"name": "Vi", "email": "vi@example.com", "role": "viewer", "password": PW})
     kinds = _events()
-    assert ("signin", "fail", "ada@bcferries.com") in kinds and ("signin", "fail", "nobody@bcferries.com") in kinds
-    assert ("signout", "ok", "ada@bcferries.com") in kinds and ("signin", "ok", "ada@bcferries.com") in kinds
-    assert ("user.create", "ok", "ada@bcferries.com") in kinds
+    assert ("signin", "fail", "ada@example.com") in kinds and ("signin", "fail", "nobody@example.com") in kinds
+    assert ("signout", "ok", "ada@example.com") in kinds and ("signin", "ok", "ada@example.com") in kinds
+    assert ("user.create", "ok", "ada@example.com") in kinds
     ev = c.get("/api/security/events?outcome=fail").json()
     assert ev and all(e["outcome"] == "fail" for e in ev)
     csvr = c.get("/api/security/events/download")
     assert csvr.status_code == 200 and "signin" in csvr.content.decode("utf-8-sig")
     c.post("/api/auth/logout")
-    c.post("/api/auth/login", json={"email": "vi@bcferries.com", "password": PW})
+    c.post("/api/auth/login", json={"email": "vi@example.com", "password": PW})
     assert c.get("/api/security/events").status_code == 403
 
 
 def test_sec06_exports_and_deletions_logged(sampled):
     c = sampled
-    a = _apps(c)["eBooking"]
+    a = _apps(c)["Customer portal"]
     c.get(f"/api/responses/{a['id']}/download?fmt=csv")
-    c.delete(f"/api/applications/{_apps(c)['Fuel monitoring (OT)']['id']}")
+    c.delete(f"/api/applications/{_apps(c)['Warehouse sensors (OT)']['id']}")
     kinds = [k for k, _, _ in _events()]
     assert "export.response" in kinds and "delete.application" in kinds and "delete.all" in kinds
 
@@ -209,7 +209,7 @@ def test_sec06_exports_and_deletions_logged(sampled):
 # ---------------------------------------------------------------- SEC-07
 def test_sec07_https_headers_and_secure_cookie(client):
     c = TestClient(client.app, base_url="https://testserver", headers={"X-QEC": "1"})
-    r = c.post("/api/auth/setup", json={"name": "A", "email": "a@bcferries.com", "password": PW})
+    r = c.post("/api/auth/setup", json={"name": "A", "email": "a@example.com", "password": PW})
     assert "secure" in r.headers["set-cookie"].lower()
     h = c.get("/api/health").headers
     assert h["strict-transport-security"].startswith("max-age=")
@@ -227,7 +227,7 @@ def test_sec08_idle_timeout(admin):
     s.close()
     r = c.get("/api/tracker")
     assert r.status_code == 401 and "without activity" in r.json()["detail"]
-    assert ("session.idle", "ok", "ada@bcferries.com") in _events()
+    assert ("session.idle", "ok", "ada@example.com") in _events()
 
 
 # ---------------------------------------------------------------- SEC-09
@@ -235,26 +235,26 @@ def test_sec09_throttle_survives_restart(admin):
     c = admin
     c.post("/api/auth/logout")
     for _ in range(5):
-        c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": "Wrong-pass-1"})
+        c.post("/api/auth/login", json={"email": "ada@example.com", "password": "Wrong-pass-1"})
     fresh = TestClient(create_app(run_startup=False), headers={"X-QEC": "1"})  # as after a restart
-    r = fresh.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW})
+    r = fresh.post("/api/auth/login", json={"email": "ada@example.com", "password": PW})
     assert r.status_code == 429
-    assert ("signin", "blocked", "ada@bcferries.com") in _events()
+    assert ("signin", "blocked", "ada@example.com") in _events()
 
 
 def test_sec09_per_address_limit(admin):
     c = admin
     c.post("/api/auth/logout")
     for i in range(20):
-        c.post("/api/auth/login", json={"email": f"guess{i}@bcferries.com", "password": "Wrong-pass-1"})
-    assert c.post("/api/auth/login", json={"email": "ada@bcferries.com", "password": PW}).status_code == 429
+        c.post("/api/auth/login", json={"email": f"guess{i}@example.com", "password": "Wrong-pass-1"})
+    assert c.post("/api/auth/login", json={"email": "ada@example.com", "password": PW}).status_code == 429
 
 
 # ---------------------------------------------------------------- SEC-10
 def test_sec10_reference_independent_of_link(sampled):
     c = sampled
-    c.post("/api/invitations/send", json={"application_ids": [_apps(c)["Vessel maintenance mobile"]["id"]]})
-    em = [e for e in c.get("/api/emails").json() if e["application"] == "Vessel maintenance mobile"][0]
+    c.post("/api/invitations/send", json={"application_ids": [_apps(c)["Field service mobile"]["id"]]})
+    em = [e for e in c.get("/api/emails").json() if e["application"] == "Field service mobile"][0]
     tok = em["body"].split("/s/")[1].split()[0]
     ref = c.get(f"/api/s/{tok}").json()["reference"]
     assert ref.startswith("QEA-") and tok[:6].upper() not in ref
@@ -265,8 +265,8 @@ def test_sec12_unknown_host_refused(sampled):
     c = sampled
     assert c.get("/api/health", headers={"Host": "evil.example.com"}).status_code == 400
     assert c.get("/api/health", headers={"Host": "localhost:8000"}).status_code == 200
-    c.put("/api/settings/delivery", json={"mode": "sim", "link_base": "https://qe-connect.bcferries.local"})
-    assert c.get("/api/health", headers={"Host": "qe-connect.bcferries.local"}).status_code == 200
+    c.put("/api/settings/delivery", json={"mode": "sim", "link_base": "https://qe-connect.example.local"})
+    assert c.get("/api/health", headers={"Host": "qe-connect.example.local"}).status_code == 200
 
 
 # ---------------------------------------------------------------- SEC-14

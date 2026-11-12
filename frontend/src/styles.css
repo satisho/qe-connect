@@ -1,7 +1,8 @@
-/* QE Connect: harbour-blue portal with a signal-flag accent. Light and dark themes. */
+/* QE Connect: client-neutral portal. Deep-teal default with a brass needle accent; each organization can set its
+   own accent colour (Administration › Organization), applied through --brand. Light and dark themes. */
 :root {
-  --bg: #EEF3F6; --surface: #FFFFFF; --sunk: #E4ECF1; --ink: #0F2233; --muted: #536677; --line: #CFDAE2;
-  --accent: #0A5A8A; --accent-ink: #FFFFFF; --accent-soft: #DCEBF4; --signal: #C98A0A; --signal-soft: #FBF0D6;
+  --bg: #F0F3F4; --surface: #FFFFFF; --sunk: #E5EBED; --ink: #10212A; --muted: #55666E; --line: #D1DADD;
+  --accent: #0E6B6B; --accent-ink: #FFFFFF; --accent-soft: #D9EEEC; --signal: #C98A0A; --signal-soft: #FBF0D6;
   --danger: #B3261E; --danger-soft: #FBE5E3; --ok: #1C7448; --ok-soft: #DDF1E6; --scrim: rgba(8, 20, 30, .45);
   --display: "Avenir Next", "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
   --body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -10,12 +11,18 @@
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0B1620; --surface: #122230; --sunk: #0E1C28; --ink: #E4EDF3; --muted: #93A8B8; --line: #24394B;
-    --accent: #5BAEE0; --accent-ink: #06192A; --accent-soft: #16344A; --signal: #F0B940; --signal-soft: #3A2F14;
+    --bg: #0C1719; --surface: #132326; --sunk: #0F1D20; --ink: #E3EDEE; --muted: #93A9AD; --line: #253A3E;
+    --accent: #5CC4BE; --accent-ink: #062120; --accent-soft: #143A39; --signal: #F0B940; --signal-soft: #3A2F14;
     --danger: #F08A80; --danger-soft: #3D1D1B; --ok: #62C995; --ok-soft: #153526; --scrim: rgba(0, 0, 0, .6);
     color-scheme: dark;
   }
 }
+/* organization accent colour */
+:root[data-brand] { --accent: var(--brand); --accent-ink: var(--brand-ink); --accent-soft: color-mix(in srgb, var(--brand) 14%, #FFFFFF) }
+@media (prefers-color-scheme: dark) {
+  :root[data-brand] { --accent: color-mix(in srgb, var(--brand) 55%, #FFFFFF); --accent-ink: #0B1A22; --accent-soft: color-mix(in srgb, var(--brand) 32%, #132326) }
+}
+.swatch { width: 44px; height: 38px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer }
 * { box-sizing: border-box }
 html, body { margin: 0 }
 body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14.5px; line-height: 1.5 }
@@ -91,6 +98,7 @@ input.bad { border-color: var(--danger) }
 textarea { resize: vertical }
 .f { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
 .hint { font-size: 12.5px; color: var(--muted); margin: 4px 0 0 }
+.hint.err { color: var(--danger) }
 .fgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px }
 .fgrid .full { grid-column: 1 / -1 }
 @media (max-width: 640px) { .fgrid { grid-template-columns: minmax(0, 1fr) } }

@@ -2,12 +2,13 @@ import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, errorText } from "../api";
 import { MfaSetup } from "../components/MfaSetup";
-import { Mark } from "../lib";
-import type { Pending } from "../types";
+import { Brand } from "../lib";
+import type { Organization, Pending } from "../types";
 
-export default function SignIn({ needsSetup, version, pending, notice }: { needsSetup: boolean; version: string; pending: Pending | null; notice?: string | null }) {
+export default function SignIn({ needsSetup, version, org, pending, notice }: { needsSetup: boolean; version: string; org?: Organization; pending: Pending | null; notice?: string | null }) {
   const qc = useQueryClient();
   const [name, setName] = useState("");
+  const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
@@ -22,7 +23,7 @@ export default function SignIn({ needsSetup, version, pending, notice }: { needs
     if (needsSetup && pw !== pw2) return setErr("The two passwords don't match.");
     setBusy(true);
     try {
-      if (needsSetup) await api.post("/api/auth/setup", { name, email, password: pw });
+      if (needsSetup) await api.post("/api/auth/setup", { name, email, password: pw, organization: orgName });
       else await api.post("/api/auth/login", { email, password: pw });
       setPw("");
       await refresh();
@@ -42,7 +43,7 @@ export default function SignIn({ needsSetup, version, pending, notice }: { needs
   };
   const restart = async () => { await api.post("/api/auth/logout"); setErr(""); await refresh(); };
 
-  const brand = <div className="brand"><Mark /><div><b>QE Connect</b><small>BC Ferries · QE Assessment portal</small></div></div>;
+  const brand = <Brand org={org} sub="QE Assessment portal" />;
 
   if (pending?.step === "verify") return (
     <div className="auth"><form className="card" onSubmit={verify} noValidate>
@@ -74,10 +75,12 @@ export default function SignIn({ needsSetup, version, pending, notice }: { needs
           <>
             <div><h1 style={{ fontSize: 24 }}>Set up QE Connect</h1>
               <p className="muted" style={{ margin: 0 }}>Create the first administrator account. You can add the rest of the assessment team afterwards.</p></div>
+            <div><label className="f" htmlFor="org">Organization</label><input id="org" type="text" value={orgName} onChange={(e) => setOrgName(e.target.value)} autoComplete="organization" maxLength={120} placeholder="e.g. Contoso Ltd" />
+              <p className="hint">The client this installation is for. Shown to the team and to survey respondents; you can change it later in Administration.</p></div>
             <div><label className="f" htmlFor="name">Your name</label><input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required /></div>
           </>
         ) : (
-          <div><h1 style={{ fontSize: 24 }}>Sign in</h1><p className="muted" style={{ margin: 0 }}>For the QE Assessment team.</p></div>
+          <div><h1 style={{ fontSize: 24 }}>Sign in</h1><p className="muted" style={{ margin: 0 }}>For the {org?.team_name || "QE Assessment team"}.</p></div>
         )}
         {notice && !needsSetup && <div className="note warn" role="status">{notice}</div>}
         <div><label className="f" htmlFor="email">Work email</label><input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required /></div>

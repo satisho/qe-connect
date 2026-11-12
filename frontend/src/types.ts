@@ -3,8 +3,9 @@ export type Status = "notsent" | "sent" | "opened" | "progress" | "completed";
 
 export interface User { id: number; email: string; name: string; role: Role; active: boolean; mfa_enabled: boolean; last_login_at: string | null }
 export interface Pending { step: "verify" | "setup"; email: string }
+export interface Organization { name: string; team_name: string; accent: string }
 export interface AuthState {
-  needs_setup: boolean; user: User | null; pending: Pending | null; version: string; campaign: string;
+  needs_setup: boolean; user: User | null; pending: Pending | null; version: string; campaign: string; organization: Organization;
   mfa_required: boolean; notice: string | null;
 }
 export interface SecurityEventRow { id: number; at: string; kind: string; outcome: "ok" | "fail" | "blocked"; actor: string; ip: string; detail: string }
@@ -45,6 +46,7 @@ export interface Delivery {
   problems: string[];
 }
 export interface Settings {
+  organization: Organization;
   campaign: { name: string; default_due_days: number };
   email: { subject: string; body: string };
   delivery: Delivery;

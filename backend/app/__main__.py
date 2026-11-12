@@ -1,7 +1,7 @@
 """Run QE Connect:  python -m app [--open] [--host H] [--port P]
 
-Recovery:  python -m app --reset-password someone@bcferries.com
-           python -m app --reset-mfa someone@bcferries.com
+Recovery:  python -m app --reset-password someone@example.com
+           python -m app --reset-mfa someone@example.com
 """
 from __future__ import annotations
 
